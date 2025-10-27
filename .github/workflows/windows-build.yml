@@ -45,7 +45,9 @@ jobs:
 
       - name: Setup MSVC Build Environment
         shell: cmd
-        run: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+        run: |
+    for /f "usebackq tokens=*" %%I in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALLDIR=%%I"
+    call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvars64.bat"
       
       - name: Build OpenSSL
         shell: cmd
