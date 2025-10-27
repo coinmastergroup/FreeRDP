@@ -1,35 +1,30 @@
-name: Build Windows client (and dependencies)
+name: Build FreeRDP on Windows
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build-windows:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout FreeRDP repo
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Install CMake and Ninja
-        uses: lukka/get-cmake@latest
+    - name: Install CMake and Ninja
+      uses: lukka/get-cmake@latest
 
-      - name: Setup Visual Studio Build Tools
-        uses: microsoft/setup-msbuild@v1
+    - name: Setup Visual Studio Build Tools
+      uses: microsoft/setup-msbuild@v1
 
-      - name: Configure FreeRDP with CMake
-        run: cmake -B build -S . -G "Ninja" -DCMAKE_BUILD_TYPE=Release \
-          -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+    - name: Configure FreeRDP with CMake
+      run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
 
-      - name: Build FreeRDP
-        run: cmake --build build --config Release
+    - name: Build FreeRDP
+      run: cmake --build build --config Release
 
-      - name: Run tests (optional)
-        run: ctest --test-dir build --output-on-failure -C Release
+    - name: Run tests (optional)
+      run: ctest --test-dir build --output-on-failure -C Release
