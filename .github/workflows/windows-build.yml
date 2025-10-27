@@ -20,11 +20,15 @@ jobs:
       - name: Setup Visual Studio Build Tools
         uses: microsoft/setup-msbuild@v1
 
-      - name: Download and Build ZLIB
+      - name: Download and extract zlib
+        id: download_zlib
+        run: |
+          powershell -Command "Invoke-WebRequest -Uri 'https://zlib.net/zlib-1.2.13.zip' -OutFile 'zlib.zip'"
+          powershell -Command "Expand-Archive -Path 'zlib.zip' -DestinationPath 'zlib'"
+
+      - name: Build zlib
         id: build_zlib
         run: |
-          curl -L -o zlib.zip https://zlib.net/zlib-1.2.13.zip
-          powershell Expand-Archive -Path zlib.zip -DestinationPath zlib
           cd zlib\zlib-1.2.13
           mkdir build
           cd build
@@ -33,9 +37,7 @@ jobs:
           echo "ZLIB_DIR=$(pwd)" >> $GITHUB_ENV
 
       - name: Configure FreeRDP with CMake
-        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON `
-          -DZLIB_LIBRARY="${{ env.ZLIB_DIR }}/build/zlib.lib" `
-          -DZLIB_INCLUDE_DIR="${{ env.ZLIB_DIR }}/zlib-1.2.13"
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON -DZLIB_LIBRARY="${{ env.ZLIB_DIR }}/zlib.lib" -DZLIB_INCLUDE_DIR="${{ env.ZLIB_DIR }}/../"
 
       - name: Build FreeRDP
         run: cmake --build build --config Release
