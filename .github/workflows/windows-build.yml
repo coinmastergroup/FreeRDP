@@ -20,7 +20,7 @@ jobs:
           submodules: true  # Update submodules if any
 
       - name: Install CMake and Ninja
-        uses: lukka/get-cmake@v4
+        uses: lukka/get-cmake@latest
 
       - name: Install Visual Studio Build Tools
         uses: microsoft/setup-msbuild@v1
