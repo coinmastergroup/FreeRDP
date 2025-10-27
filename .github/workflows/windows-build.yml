@@ -1,0 +1,31 @@
+name: Build FreeRDP on Windows
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install CMake and Ninja
+      run: |
+        choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+        choco install ninja -y
+
+    - name: Configure FreeRDP with CMake
+      run: cmake -B build -S . -G "Visual Studio 17 2022" -A x64 -DWITH_OPENH264=ON -DWITH_FFMPEG=ON
+
+    - name: Build FreeRDP
+      run: cmake --build build --config Release
+
+    - name: (Optional) Run tests
+      run: ctest --test-dir build --output-on-failure -C Release
