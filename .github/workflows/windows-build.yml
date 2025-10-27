@@ -10,6 +10,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,15 +18,22 @@ jobs:
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
 
-      - name: Setup Visual Studio Build Tools
-        uses: microsoft/setup-msbuild@v1
+      - name: Install Python (required for OpenSSL build)
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Setup MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Download and extract zlib
         run: |
           curl -L -o zlib.tar.gz https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz
           tar -xzf zlib.tar.gz
           mkdir -p zlib_src
-          mv zlib-1.2.13 zlib_src/zlib-1.2.13
+          mv zlib-1.2.13 zlib_src/
 
       - name: Build zlib
         working-directory: ./zlib_src/zlib-1.2.13
@@ -43,23 +51,22 @@ jobs:
           mkdir -p openssl_src
           mv openssl-3.1.2 openssl_src/
 
-      - name: Setup MSVC Build Environment
-        shell: cmd
-        run: |
-          for /f "usebackq tokens=*" %%I in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
-            set "VSINSTALLDIR=%%I"
-          )
-          call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvars64.bat"
-      
       - name: Build OpenSSL
+        working-directory: ./openssl_src/openssl-3.1.2
         shell: cmd
         run: |
           perl Configure VC-WIN64A no-shared no-tests --prefix=%CD%\install
           nmake
           nmake install
+          echo OPENSSL_ROOT_DIR=%CD%\install >> $GITHUB_ENV
 
-      - name: Configure FreeRDP with CMake
-        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
+      - name: Configure FreeRDP
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM="3.5" -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON \
+          -DZLIB_LIBRARY="${{ env.ZLIB_DIR }}/zlib.lib" -DZLIB_INCLUDE_DIR="${{ env.ZLIB_DIR }}/../" \
+          -DOPENSSL_ROOT_DIR="${{ env.OPENSSL_ROOT_DIR }}" \
+          -DOPENSSL_INCLUDE_DIR="${{ env.OPENSSL_ROOT_DIR }}/include" \
+          -DOPENSSL_CRYPTO_LIBRARY="${{ env.OPENSSL_ROOT_DIR }}/lib/libcrypto.lib" \
+          -DOPENSSL_SSL_LIBRARY="${{ env.OPENSSL_ROOT_DIR }}/lib/libssl.lib"
 
       - name: Build FreeRDP
         run: cmake --build build --config Release
