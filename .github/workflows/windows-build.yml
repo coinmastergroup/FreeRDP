@@ -36,12 +36,20 @@ jobs:
           cmake --build . --config Release
           echo "ZLIB_DIR=$(pwd)" >> $GITHUB_ENV
 
-      - name: Install vcpkg and OpenSSL
+      - name: Download and extract OpenSSL
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.bat
-          ./vcpkg/vcpkg.exe install openssl:x64-windows-static
-        shell: cmd
+          curl -L -o openssl.tar.gz https://www.openssl.org/source/openssl-3.1.2.tar.gz
+          tar -xzf openssl.tar.gz
+          mkdir -p openssl_src
+          mv openssl-3.1.2 openssl_src/
+
+      - name: Build OpenSSL
+        working-directory: ./openssl_src/openssl-3.1.2
+        run: |
+          perl Configure VC-WIN64A no-shared no-tests --prefix=$(pwd)/install
+          nmake
+          nmake install
+          echo "OPENSSL_ROOT_DIR=$(pwd)/install" >> $GITHUB_ENV
 
       - name: Configure FreeRDP with CMake
         run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
