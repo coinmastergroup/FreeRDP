@@ -1,0 +1,12 @@
+{
+  "name": "freerdp",
+  "version": "3.17.3",
+  "dependencies": [
+    "zlib",
+    "libjpeg-turbo",
+    "openssl",
+    "ffmpeg",
+    "openh264",
+    "libusb"
+  ]
+}
