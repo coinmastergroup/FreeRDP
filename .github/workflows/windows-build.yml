@@ -39,7 +39,19 @@ jobs:
           7z x ffmpeg.7z -odeps
           ren deps\ffmpeg-* ffmpeg
 
-      - name: Download and extract zlib
+      # Cache zlib source and build output
+      - name: Cache zlib source and build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./zlib_src
+            ./zlib_src/zlib-1.2.13/build
+          key: ${{ runner.os }}-zlib-${{ hashFiles('zlib_src/zlib-1.2.13/**') }}
+          restore-keys: |
+            ${{ runner.os }}-zlib-
+
+      - name: Download and extract zlib (if needed)
+        if: steps.cache-zlib.outputs.cache-hit != 'true'
         run: |
           curl -L -o zlib.tar.gz https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz
           tar -xzf zlib.tar.gz
@@ -47,6 +59,7 @@ jobs:
           mv zlib-1.2.13 zlib_src/
 
       - name: Build zlib
+        if: steps.cache-zlib.outputs.cache-hit != 'true'
         working-directory: ./zlib_src/zlib-1.2.13
         run: |
           mkdir build
@@ -55,7 +68,19 @@ jobs:
           cmake --build . --config Release
           echo "ZLIB_DIR=$(pwd)" >> $GITHUB_ENV
 
-      - name: Download and extract OpenSSL
+      # Cache OpenSSL source and install output
+      - name: Cache OpenSSL source and install
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./openssl_src
+            ./openssl_src/openssl-3.1.2/install
+          key: ${{ runner.os }}-openssl-${{ hashFiles('openssl_src/openssl-3.1.2/**') }}
+          restore-keys: |
+            ${{ runner.os }}-openssl-
+
+      - name: Download and extract OpenSSL (if needed)
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
         run: |
           curl -L -o openssl.tar.gz https://www.openssl.org/source/openssl-3.1.2.tar.gz
           tar -xzf openssl.tar.gz
@@ -63,8 +88,9 @@ jobs:
           mv openssl-3.1.2 openssl_src/
 
       - name: Build OpenSSL
-        working-directory: ./openssl_src/openssl-3.1.2
+        if: steps.cache-openssl.outputs.cache-hit != 'true'
         shell: cmd
+        working-directory: ./openssl_src/openssl-3.1.2
         run: |
           perl Configure VC-WIN64A no-shared no-tests --prefix=%CD%\install
           nmake
