@@ -1,4 +1,4 @@
-name: Build FreeRDP on Windows (Build dependencies from source)
+name: Build Windows client (and dependencies)
 
 on:
   push:
@@ -14,27 +14,22 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout FreeRDP repo
         uses: actions/checkout@v3
-        with:
-          submodules: true  # Update submodules if any
 
       - name: Install CMake and Ninja
         uses: lukka/get-cmake@latest
 
-      - name: Install Visual Studio Build Tools
+      - name: Setup Visual Studio Build Tools
         uses: microsoft/setup-msbuild@v1
 
-      - name: Run bootstrap to build dependencies
-        run: |
-          cd build-scripts\windows
-          .\build-deps.bat
-
       - name: Configure FreeRDP with CMake
-        run: cmake -B build -S . -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON
+        run: cmake -B build -S . -G "Ninja" -DCMAKE_BUILD_TYPE=Release \
+          -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
 
       - name: Build FreeRDP
         run: cmake --build build --config Release
 
-      - name: (Optional) Run tests
+      - name: Run tests (optional)
         run: ctest --test-dir build --output-on-failure -C Release
