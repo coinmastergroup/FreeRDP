@@ -1,4 +1,4 @@
-name: Build FreeRDP on Windows with vcpkg
+name: Build FreeRDP on Windows (Build dependencies from source)
 
 on:
   push:
@@ -14,27 +14,27 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: true  # Update submodules if any
 
-    - name: Install CMake and Ninja
-      uses: lukka/get-cmake@latest
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@v4
 
-    - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
-      with:
-        # Cache vcpkg executable and build data to speed up subsequent runs
-        doNotCache: false
-        # Optionally specify custom vcpkg root directory if needed
-        # vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-        runVcpkgInstall: true
-        vcpkgJsonGlob: '**/vcpkg.json'
+      - name: Install Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1
 
-    - name: Configure FreeRDP
-      run: cmake -B build -S . -G "Ninja" -DCMAKE_TOOLCHAIN_FILE="${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake" -DWITH_OPENH264=ON -DWITH_FFMPEG=ON
+      - name: Run bootstrap to build dependencies
+        run: |
+          cd build-scripts\windows
+          .\build-deps.bat
 
-    - name: Build FreeRDP
-      run: cmake --build build --config Release
+      - name: Configure FreeRDP with CMake
+        run: cmake -B build -S . -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON
 
-    - name: (Optional) Run tests
-      run: ctest --test-dir build --output-on-failure -C Release
+      - name: Build FreeRDP
+        run: cmake --build build --config Release
+
+      - name: (Optional) Run tests
+        run: ctest --test-dir build --output-on-failure -C Release
