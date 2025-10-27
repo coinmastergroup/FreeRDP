@@ -20,16 +20,20 @@ jobs:
       - name: Setup Visual Studio Build Tools
         uses: microsoft/setup-msbuild@v1
 
+      - name: Install 7-Zip for archive extraction
+        run: choco install 7zip -y
+
       - name: Download and extract zlib
         id: download_zlib
         run: |
-          powershell -Command "Invoke-WebRequest -Uri 'https://zlib.net/zlib-1.2.13.zip' -OutFile 'zlib.zip'"
-          powershell -Command "Expand-Archive -Path 'zlib.zip' -DestinationPath 'zlib'"
+          curl -L -o zlib.tar.gz https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz
+          7z x zlib.tar.gz -o./zlib
+          7z x ./zlib/zlib-1.2.13.tar -o./zlib_src
 
       - name: Build zlib
         id: build_zlib
         run: |
-          cd zlib\zlib-1.2.13
+          cd zlib_src/zlib-1.2.13
           mkdir build
           cd build
           cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
