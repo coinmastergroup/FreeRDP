@@ -11,20 +11,34 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Install CMake and Ninja
-      uses: lukka/get-cmake@latest
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
 
-    - name: Setup Visual Studio Build Tools
-      uses: microsoft/setup-msbuild@v1
+      - name: Setup Visual Studio Build Tools
+        uses: microsoft/setup-msbuild@v1
 
-    - name: Configure FreeRDP with CMake
-      run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
+      - name: Download and Build ZLIB
+        id: build_zlib
+        run: |
+          curl -L -o zlib.zip https://zlib.net/zlib-1.2.13.zip
+          powershell Expand-Archive -Path zlib.zip -DestinationPath zlib
+          cd zlib\zlib-1.2.13
+          mkdir build
+          cd build
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+          echo "ZLIB_DIR=$(pwd)" >> $GITHUB_ENV
 
-    - name: Build FreeRDP
-      run: cmake --build build --config Release
+      - name: Configure FreeRDP with CMake
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON `
+          -DZLIB_LIBRARY="${{ env.ZLIB_DIR }}/build/zlib.lib" `
+          -DZLIB_INCLUDE_DIR="${{ env.ZLIB_DIR }}/zlib-1.2.13"
 
-    - name: Run tests (optional)
-      run: ctest --test-dir build --output-on-failure -C Release
+      - name: Build FreeRDP
+        run: cmake --build build --config Release
+
+      - name: Run tests (optional)
+        run: ctest --test-dir build --output-on-failure -C Release
