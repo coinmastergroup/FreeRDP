@@ -27,8 +27,7 @@ jobs:
         id: download_zlib
         run: |
           curl -L -o zlib.tar.gz https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz
-          & 'C:\Program Files\7-Zip\7z.exe' x zlib.tar.gz -ozlib
-          & 'C:\Program Files\7-Zip\7z.exe' x zlib/zlib-1.2.13.tar -ozlib_src
+          tar -xzf zlib.tar.gz
 
       - name: Build zlib
         id: build_zlib
