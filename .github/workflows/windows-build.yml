@@ -43,13 +43,16 @@ jobs:
           mkdir -p openssl_src
           mv openssl-3.1.2 openssl_src/
 
+      - name: Setup MSVC Build Environment
+        shell: cmd
+        run: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+      
       - name: Build OpenSSL
-        working-directory: ./openssl_src/openssl-3.1.2
+        shell: cmd
         run: |
-          perl Configure VC-WIN64A no-shared no-tests --prefix=$(pwd)/install
+          perl Configure VC-WIN64A no-shared no-tests --prefix=%CD%\install
           nmake
           nmake install
-          echo "OPENSSL_ROOT_DIR=$(pwd)/install" >> $GITHUB_ENV
 
       - name: Configure FreeRDP with CMake
         run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
