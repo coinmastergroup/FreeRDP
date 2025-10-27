@@ -36,8 +36,15 @@ jobs:
           cmake --build . --config Release
           echo "ZLIB_DIR=$(pwd)" >> $GITHUB_ENV
 
+      - name: Install vcpkg and OpenSSL
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          ./vcpkg/bootstrap-vcpkg.bat
+          ./vcpkg/vcpkg.exe install openssl:x64-windows-static
+        shell: cmd
+
       - name: Configure FreeRDP with CMake
-        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON -DZLIB_LIBRARY="${{ env.ZLIB_DIR }}/zlib.lib" -DZLIB_INCLUDE_DIR="${{ env.ZLIB_DIR }}/../"
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DWITH_OPENH264=ON -DWITH_FFMPEG=ON -DWITH_SWSCALE=ON
 
       - name: Build FreeRDP
         run: cmake --build build --config Release
