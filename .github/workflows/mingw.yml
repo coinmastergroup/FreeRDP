@@ -33,3 +33,9 @@ jobs:
       - name: "Run mingw [static] build..."
         run: |
           ./scripts/mingw.sh -c -s --clean-first
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: build-output
+          path: build-mingw/install
